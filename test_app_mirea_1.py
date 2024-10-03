@@ -1,4 +1,3 @@
-import cv2
 import os
 import sys
 from PySide6.QtCore import QDate, QDir, QStandardPaths, Qt, QUrl, Slot, QSize
