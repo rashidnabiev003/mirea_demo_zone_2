@@ -11,7 +11,7 @@ from PySide6.QtMultimedia import (QCamera, QImageCapture,
                                   QMediaDevices, QMediaFormat, QMediaRecorder, QMediaPlayer, QAudioOutput, QAudioInput)
 from PySide6.QtMultimediaWidgets import QVideoWidget
 from image_generator import generator
-
+from speech_recognition_module import speech_to_text
 
 FILE_NAME = 'C:/Users/HP/Pictures/test.jpg'
 GENERATED_AUDIO = 'C:/Users/HP/Pictures/test.wav'
@@ -30,10 +30,15 @@ class AudioPlayer(QWidget):
         self.media_player = QMediaPlayer()
         self.audio_output = QAudioOutput()
         self.audio_input = QAudioInput()
+        self.text_output = QLineEdit()
+        self.text_output.setFixedSize(900, 400)
+        self.text_output.setReadOnly(True)
         self.generate_button = QPushButton("Generate Audio")
         self.start_recording_button = QPushButton("Start Recording")
         self.stop_recording_button = QPushButton("Stop Recording")
         self.stop_recording_button.setEnabled(False)
+        self.speech_to_text_button = QPushButton("Convert speech to text")
+        self.speech_to_text_button.setEnabled(False)
 
         self.session = QMediaCaptureSession()
         self.session.setAudioInput(self.audio_input)
@@ -54,9 +59,11 @@ class AudioPlayer(QWidget):
 
         # ---------------------------------------- layouts---------------------------
         layout = QVBoxLayout()
+        layout.addWidget(self.text_output)
         layout.addWidget(self.generate_button)
         layout.addWidget(self.start_recording_button)
         layout.addWidget(self.stop_recording_button)
+        layout.addWidget(self.speech_to_text_button)
         self.setLayout(layout)
 
     @Slot()
@@ -68,11 +75,17 @@ class AudioPlayer(QWidget):
     def _start_recording(self):
         self.recorder.record()
         self.stop_recording_button.setEnabled(True)
+        self.speech_to_text_button.setEnabled(True)
 
     @Slot()
     def _stop_recording(self):
         self.recorder.stop()
         self.stop_recording_button.setEnabled(False)
+
+    @Slot()
+    def _speech_to_text(self):
+        self.text_output.setText("")
+        self.text_output.setText(speech_to_text(AUDIO_RECORDER))
 
 
 class MediaPlayer(QWidget):
