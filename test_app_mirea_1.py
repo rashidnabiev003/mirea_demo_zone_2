@@ -10,12 +10,18 @@ from PySide6.QtMultimedia import (QCamera, QImageCapture,
                                   QCameraDevice, QMediaCaptureSession,
                                   QMediaDevices, QMediaFormat, QMediaRecorder, QMediaPlayer, QAudioOutput, QAudioInput)
 from PySide6.QtMultimediaWidgets import QVideoWidget
+<<<<<<< HEAD
 from image_generator import generator
 from speech_recognition_module import speech_to_text
+=======
+from image_generator import generate_image
+from audio_generator import generate_audio
 
-FILE_NAME = 'C:/Users/HP/Pictures/test.jpg'
-GENERATED_AUDIO = 'C:/Users/HP/Pictures/test.wav'
-AUDIO_RECORDER = 'C:/Users/HP/Pictures/recorder'
+>>>>>>> 5f517ac8942e1e0a11dd9c347ddc79636f331892
+
+GENERATED_IMAGE = './test.jpg'
+GENERATED_AUDIO = 'test'
+AUDIO_RECORDER = './recorder'
 
 
 def available_cameras():
@@ -68,7 +74,8 @@ class AudioPlayer(QWidget):
 
     @Slot()
     def _generate_button(self):
-        self.media_player.setSource(QUrl.fromLocalFile(GENERATED_AUDIO))
+        generate_audio(["funny jazz"], GENERATED_AUDIO)
+        self.media_player.setSource(QUrl.fromLocalFile(f"{GENERATED_AUDIO}.wav"))
         self.media_player.play()
 
     @Slot()
@@ -195,7 +202,7 @@ class ImageGENWindow(QWidget):
     def picture_generation_func(self):
         self._confirm_button.setEnabled(False)
         prompt_text = str(self._reference_text_widget.text())
-        file_name = generator(prompt_text)
+        file_name = generate_image(prompt_text, GENERATED_IMAGE)
         self._gen_picture_widget.setPixmap(QPixmap(file_name))
         self._reference_text_widget.setText("")
         self._confirm_button.setEnabled(True)
@@ -226,15 +233,15 @@ class MainWindow(QMainWindow):
         self._picture_widget.setFixedSize(300, 300)
 
         # ---------------------------------------- camera initialization---------------------------
-        self._camera_info = available_cameras()
-        self._camera = QCamera(self._camera_info)
-        self._image_capture = QImageCapture(self._camera)
-        self._capture_session = QMediaCaptureSession()  # штука без которой съемка не работает
-        self._capture_session.setCamera(self._camera)  # выбираем какой камерой начинаем съемку
-        self._capture_session.setVideoOutput(self._video_widget)  # направляет видеопоток с камеры на виджет(окно)
-        self._capture_session.setImageCapture(self._image_capture)
-        self._current_preview = QImage()
-        self._camera.start()  # собственно включение камеры
+        # self._camera_info = available_cameras()
+        # self._camera = QCamera(self._camera_info)
+        # self._image_capture = QImageCapture(self._camera)
+        # self._capture_session = QMediaCaptureSession()  # штука без которой съемка не работает
+        # self._capture_session.setCamera(self._camera)  # выбираем какой камерой начинаем съемку
+        # self._capture_session.setVideoOutput(self._video_widget)  # направляет видеопоток с камеры на виджет(окно)
+        # self._capture_session.setImageCapture(self._image_capture)
+        # self._current_preview = QImage()
+        # self._camera.start()  # собственно включение камеры
 
         # ---------------------------------------- camera initialization---------------------------
 
@@ -252,10 +259,10 @@ class MainWindow(QMainWindow):
         # ---------------------------------------- button logic---------------------------
 
         # ---------------------------------------- video ---------------------------
-        self.recorder = QMediaRecorder(self._camera)
-        self._capture_session.setRecorder(self.recorder)
-        settings = QMediaFormat(QMediaFormat.MPEG4)
-        self.recorder.setMediaFormat(settings)
+        # self.recorder = QMediaRecorder(self._camera)
+        # self._capture_session.setRecorder(self.recorder)
+        # settings = QMediaFormat(QMediaFormat.MPEG4)
+        # self.recorder.setMediaFormat(settings)
         # ---------------------------------------- video---------------------------
 
         # ---------------------------------------- layouts---------------------------
@@ -272,9 +279,9 @@ class MainWindow(QMainWindow):
         main_layout.addLayout(r_layout)
         self._main_widget.setLayout(main_layout)
 
-        self._tab_widget.addTab(self._main_widget, "Video-Picture")
+        #self._tab_widget.addTab(self._main_widget, "Video-Picture")
         self._tab_widget.addTab(self._picture_gen, "Picture-Generation")
-        self._tab_widget.addTab(self._video_player, "Video Player")
+        #self._tab_widget.addTab(self._video_player, "Video Player")
         self._tab_widget.addTab(self._audio_generation, "Audio Generation")
 
     @Slot()
