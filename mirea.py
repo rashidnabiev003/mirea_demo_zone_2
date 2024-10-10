@@ -32,6 +32,7 @@ class AudioPlayer(QWidget):
         self.audio_output = QAudioOutput()
         self.audio_input = QAudioInput()
         self.generate_button = QPushButton("Generate Audio")
+        self.text = QLineEdit()
         self.start_recording_button = QPushButton("Start Recording")
         self.stop_recording_button = QPushButton("Stop Recording")
         self.stop_recording_button.setEnabled(False)
@@ -54,15 +55,19 @@ class AudioPlayer(QWidget):
         # ---------------------------------------- button logic---------------------------
 
         # ---------------------------------------- layouts---------------------------
+        Hlayout = QHBoxLayout()
+        Hlayout.addWidget(self.text)
+        Hlayout.addWidget(self.generate_button)
         layout = QVBoxLayout()
-        layout.addWidget(self.generate_button)
-        layout.addWidget(self.start_recording_button)
-        layout.addWidget(self.stop_recording_button)
+        layout.addLayout(Hlayout)
+        # layout.addWidget(self.start_recording_button)
+        # layout.addWidget(self.stop_recording_button)
         self.setLayout(layout)
 
     @Slot()
     def _generate_button(self):
-        generate_audio(["funny jazz"], GENERATED_AUDIO)
+        prompt_text = str(self.text.text())
+        generate_audio([prompt_text], GENERATED_AUDIO)
         self.media_player.setSource(QUrl.fromLocalFile(f"{GENERATED_AUDIO}.wav"))
         self.media_player.play()
 
@@ -82,7 +87,7 @@ class MediaPlayer(QWidget):
         super().__init__()
 
         self.setGeometry(200, 200, 1000, 600)
-        self.mediaplayer = QMediaPlayer()
+        self.mediaplayer = QMediaPlayer()        
         self.audio = QAudioOutput()
 
         videowidget = QVideoWidget()
