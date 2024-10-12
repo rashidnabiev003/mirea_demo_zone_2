@@ -24,5 +24,6 @@ pipe = pipeline(
 
 
 def speech_to_text(audio_path) -> str:
-    result = pipe("audio.mp3")
+    result = pipe(audio_path)
     return result["text"]
+

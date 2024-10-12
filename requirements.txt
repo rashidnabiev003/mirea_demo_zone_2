@@ -6,3 +6,4 @@ PySide6==6.7.3
 Requests==2.32.3
 torch==2.4.1+cu124
 transformers==4.45.1
+accelerate==0.26.0
