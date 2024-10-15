@@ -8,10 +8,14 @@ from audiocraft.models import MusicGen
 from audiocraft.data.audio import audio_write
 import sounddevice as sd
 from scipy.io.wavfile import write
+import json as js
 
 def main(page: ft.Page):
+    progress = ft.ProgressRing()
+
     def generate_image(e):
-        image_button.disabled = True
+        imageRow.controls.remove(imageButton)
+        imageRow.controls.append(progress)
         page.update()
         API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0"
         headers = {"Authorization": "Bearer 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"}
@@ -19,22 +23,33 @@ def main(page: ft.Page):
             response = requests.post(API_URL, headers=headers, json=payload)
             return response.content
 
-        image_bytes = query({"inputs": image_field.value})
+        image_bytes = query({"inputs": imageField.value})
         image = Image.open(io.BytesIO(image_bytes))
-        image_path = "output1.jpg" if image_src.src=="output.jpg" else "output.jpg"
+        image_path = "output1.jpg" if imageSrc.src=="output.jpg" else "output.jpg"
         image.save(image_path)
-        image_src.src = image_path
-        image_button.disabled = False
+        imageSrc.src = image_path
+        imageRow.controls.remove(progress)
+        imageRow.controls.append(imageButton)
         page.update()
 
     def generate_music(e):
+        audioRow.controls.remove(musicButton)
+        audioRow.controls.append(progress)
+        page.update()
         text = [musicField.value]
         model = MusicGen.get_pretrained("medium", "cuda")
         model.set_generation_params(duration=10)
         audio = model.generate(text)
         audio_write("output_ag", audio[0].cpu(), model.sample_rate, strategy="loudness")
+        audioRow.controls.remove(progress)
+        audioRow.controls.append(musicButton)
+        page.update()
 
     def cloneTTS(e):
+        ttsRow.controls.remove(ttsButton)
+        ttsRow.controls.append(progress)
+        page.update()
+
         tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2", gpu=True)
 
         tts.tts_to_file(
@@ -43,11 +58,14 @@ def main(page: ft.Page):
             speaker_wav = "target.wav",
             language = "ru"
             )
+
+        ttsRow.controls.remove(progress)
+        ttsRow.controls.append(ttsButton)
         page.update()
 
     def record(e):
-        rec_button.icon = ft.icons.PAUSE_CIRCLE
-        rec_button.disabled = True
+        rvcRec.icon = ft.icons.PAUSE_CIRCLE
+        rvcRec.disabled = True
         page.update()
         fs = 44100  # Sample rate
         seconds = 5  # Duration of recording
@@ -55,95 +73,102 @@ def main(page: ft.Page):
         recording = sd.rec(int(seconds * fs), samplerate=fs, channels=2)
         sd.wait()  # Wait until recording is finished
         write('source.wav', fs, recording)  # Save as WAV file
-        rec_button.icon = ft.icons.PLAY_ARROW_ROUNDED
-        rec_button.disabled = False
+        rvcRec.icon = ft.icons.PLAY_ARROW_ROUNDED
+        rvcRec.disabled = False
         page.update()
 
     def generate_rvc(e):
-        process_text.value = "Processing..."
+        rvcText.value = "Processing..."
         page.update()
         os.system("python inference.py")
-        #subprocess.call(["python", "inference.py"])
-        process_text.value = ""
+        rvcText.value = ""
+        rvcRow.controls.remove()
         page.update()
-    def play_music(e):
-        play("output_ag.wav")
-    def play_tts(e):
-        play("output_tts.wav")
-    def play_rvc(e):
-        play("output_rvc.wav")
+
     def clear(e):
-        pass
-        # os.remove("output_tts.wav")
-        # os.remove("output.wav")
-        # os.remove("output.jpg")
+        # pass
+        os.system("rm /r output_tts.wav")
+        os.remove("output_ag.wav")
+        os.remove("output.jpg")
+        os.remove("output1.jpg")
 
-    image_field = ft.TextField(hint_text="What's needs to be done?", autofocus=True)
-    image_button = ft.IconButton(icon=ft.icons.SEND, on_click=generate_image)
-    image_src = ft.Image(src="output.jpg", width=300)
+    imageField = ft.TextField(hint_text="What's needs to be done?", autofocus=True)
+    imageButton = ft.IconButton(icon=ft.icons.SEND, on_click=generate_image)
+    imageSrc = ft.Image(src="output.jpg", width=300)
 
-    image_tab = ft.Column(
+    imageRow = ft.Row(
+                controls=[
+                    imageField,
+                    imageButton
+                ],
+            )
+
+    imageTab = ft.Column(
         controls=[
             ft.Text(value="Опишите картинку и нажмите на кнопку для обработки"),
-            ft.Row(
-                controls=[
-                    image_field,
-                    image_button
-                ],
-            ),
+            imageRow,
             ft.Text(value="Сгенерированное изображение"),
-            image_src
+            imageSrc
         ],
     )
 
     musicField = ft.TextField(hint_text="Type of music")
+    musicButton = ft.IconButton(icon=ft.icons.SEND, on_click=generate_music)
 
-    audio_tab = ft.Column(
-        controls=[
-            ft.Text(value="Впишите жанры, которые хотите услышать и нажмите на кнопку для обработки"),
-            ft.Row(
+    audioRow = ft.Row(
                 controls=[
                     musicField,
-                    ft.IconButton(icon=ft.icons.SEND, on_click=generate_music)
+                    musicButton
                 ]
-            ),
+            )
+
+    audioTab = ft.Column(
+        controls=[
+            ft.Text(value="Впишите жанры, которые хотите услышать и нажмите на кнопку для обработки"),
+            audioRow,
             ft.Text(value="Нажмите на кнопку play чтобы прослушать результат"),
-            ft.IconButton(icon=ft.icons.PLAY_ARROW, on_click=play_music)
+            ft.IconButton(icon=ft.icons.PLAY_ARROW, on_click=lambda e: play("output_ag.wav"))
         ]
     )
 
     ttsField = ft.TextField(hint_text="TTS")
+    ttsButton = ft.IconButton(icon=ft.icons.SEND, on_click=cloneTTS)
 
-    tts_tab = ft.Column(
-        controls=[
-            ft.Text(value="Впишите текст, который хотите озвучить и нажмите на кнопку для обработки"),
-            ft.Row(
+    ttsRow =  ft.Row(
                 controls=[
                     ttsField,
-                    ft.IconButton(icon=ft.icons.SEND, on_click=cloneTTS)
+                    ttsButton
                 ]
-            ),
+            )
+
+    ttsTab = ft.Column(
+        controls=[
+            ft.Text(value="Впишите текст, который хотите озвучить и нажмите на кнопку для обработки"),
+            ttsRow,
             ft.Text(value="Нажмите на кнопку play чтобы прослушать результат"),
-            ft.IconButton(icon=ft.icons.PLAY_ARROW, on_click=play_tts),
+            ft.IconButton(icon=ft.icons.PLAY_ARROW, on_click=lambda e: play("output_tts.wav")),
         ]
     )
 
-    rec_button = ft.IconButton(icon=ft.icons.PLAY_ARROW, on_click=record)
-    process_text = ft.Text(value="")
+    rvcRec = ft.IconButton(icon=ft.icons.PLAY_ARROW, on_click=record)
+    rvcText = ft.Text(value="")
+    rvcButton = ft.IconButton(icon=ft.icons.SEND, on_click=generate_rvc)
 
-    rvc_tab = ft.Column(
+    rvcRow = ft.Row(
+                controls=[
+                    rvcButton,
+                    rvcText
+                ]
+            )
+
+    rvcTab = ft.Column(
         controls=[
             ft.Text(value="Нажми, чтобы начать запись аудио на 5 секунд"),
-            rec_button,
+            rvcRec,
             ft.Text(value="Нажми, чтобы изменить голос на голос Губки Боба"),
-            ft.Row(
-                controls=[
-                    ft.IconButton(icon=ft.icons.SEND, on_click=generate_rvc),
-                    process_text
-                ]
-            ),
+            rvcRow,
             ft.Text(value="Нажми, чтобы услышать изменённый голос"),
-            ft.IconButton(icon=ft.icons.PLAY_ARROW, on_click=play_rvc)
+            ft.IconButton(icon=ft.icons.PLAY_ARROW, on_click=lambda e: play("output_rvc.wav"))
         ]
     )
 
@@ -153,26 +178,115 @@ def main(page: ft.Page):
         tabs=[
             ft.Tab(
                 text="Image",
-                content=image_tab
+                content=imageTab
             ),
             ft.Tab(
                 text="Audio",
-                content=audio_tab
+                content=audioTab
             ),
             ft.Tab(
                 text="TTS",
-                content=tts_tab
+                content=ttsTab
             ),
             ft.Tab(
                 text="RVC",
-                content=rvc_tab,
+                content=rvcTab,
 
             )
         ]
     )
 
-    page.add(tabs)
-    page.on_close=clear
+    gerb = ft.Image(src='output1.jpg', height=100)
+    gerbContainer = ft.Container(width=300, content=gerb, border=ft.border.only(right=ft.border.BorderSide(2, "black")))
+    lab_text = ft.Text(value='laba luchshe vseh', text_align=ft.alignment.center)
+    top_row = ft.Row(
+        controls=[
+            gerbContainer,
+            lab_text
+        ]
+    )
+
+    page.add(top_row)
+
+    l_column = ft.Column(
+        controls=[
+
+        ],
+        width=300,
+        height=800
+    )
+
+    left_column = ft.Container(
+        content=l_column,
+        border=ft.border.only(right=ft.border.BorderSide(2, "black"), top=ft.border.BorderSide(2, "black"))
+    )
+
+    main_column = ft.Column(
+            controls=[
+                ft.Text(value='Main')
+            ]
+        )
+
+    m_column = ft.Container(
+        height=800,
+        width=800,
+        content=main_column,
+        border=ft.border.only(top=ft.border.BorderSide(2, "black")),
+        alignment=ft.alignment.top_left
+    )
+
+    main_row = ft.Row(
+        controls=[
+            left_column,
+            m_column
+        ]
+    )
+
+    page.add(main_row)
+
+    def get_tab(name):
+        tab = ft.Text(value="None")
+        match name:
+            case "SD":
+                tab = imageTab
+            case "ac":
+                tab = audioTab
+            case "tts":
+                tab = ttsTab
+            case "rvc":
+                tab = rvcTab
+        return tab
+
+    def change_tab(cat, name):
+        with open('main.json') as f:
+            d = js.load(f)
+            main_column.controls.clear()
+            main_column.controls.append(ft.Text(value='Long'))
+            main_column.controls.append(ft.Text(value=d[cat][name]["desc"], weight=ft.FontWeight.BOLD))
+            main_column.controls.append(ft.Text(value='Short'))
+            main_column.controls.append(ft.Text(d[cat][name]["short_desc"], weight=ft.FontWeight.BOLD))
+            main_column.controls.append(get_tab(name))
+            page.update()
+
+    def js_print_name(t):
+        l_column.controls.append(ft.Text(value=t))
+        page.update()
+
+    def js_print_button(i, t):
+        l_column.controls.append(
+            ft.Row(controls=[ft.Text(value="- "), ft.TextButton(text=t, on_click=lambda e: change_tab(i, t))]))
+        page.update()
+
+    with open('main.json') as f:
+        d = js.load(f)
+        print(d)
+        for i in d:
+            js_print_name(i)
+            for j in d[i]:
+                js_print_button(i, j)
+
+    # page.add(tabs)
+    page.on_connect=clear
 
 ft.app(
     main,
