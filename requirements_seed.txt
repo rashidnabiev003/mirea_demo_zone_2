@@ -1,17 +1,8 @@
 --extra-index-url https://download.pytorch.org/whl/cu121
-torch
+torch==2.1.0
 torchvision
 torchaudio
-scipy==1.13.1
-librosa==0.10.2
-huggingface-hub
-munch
-einops
-descript-audio-codec
 git+https://github.com/openai/whisper.git
-gradio
 pydub
 resemblyzer
 jiwer
-transformers
-onnxruntime
