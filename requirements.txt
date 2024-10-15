@@ -22,8 +22,8 @@ torchmetrics==1.4.3
 gradio==5.0.2
 xformers==0.0.22.post7
 umap-learn==0.5.6
-spacy==3.8.2
+#spacy==3.8.2
 soxr==0.5.0.post1
 scikit-learn==1.5.2
 pandas==1.5.3
-blis==1.0.0
+#blis==1.0.0

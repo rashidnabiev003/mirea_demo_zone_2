@@ -1,7 +1,7 @@
 import flet as ft
 from TTS.api import TTS
 import requests
-import io, os
+import io, subprocess, os
 from PIL import Image
 from playsound import playsound as play
 from audiocraft.models import MusicGen
@@ -10,10 +10,6 @@ import sounddevice as sd
 from scipy.io.wavfile import write
 
 def main(page: ft.Page):
-    imageGen = ft.TextField(hint_text="What's needs to be done?", autofocus=True)
-    musicField = ft.TextField(hint_text="Type of music")
-    ttsField = ft.TextField(hint_text="TTS")
-
     def generate_image(e):
         API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0"
         headers = {"Authorization": "Bearer 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"}
@@ -45,26 +41,39 @@ def main(page: ft.Page):
         page.update()
 
     def record(e):
+        rec_button.icon = ft.icons.PAUSE_CIRCLE
+        rec_button.disabled = True
+        page.update()
         fs = 44100  # Sample rate
         seconds = 5  # Duration of recording
 
         recording = sd.rec(int(seconds * fs), samplerate=fs, channels=2)
         sd.wait()  # Wait until recording is finished
         write('source.wav', fs, recording)  # Save as WAV file
+        rec_button.icon = ft.icons.PLAY_ARROW_ROUNDED
+        rec_button.disabled = False
+        page.update()
 
     def generate_rvc(e):
-        os.system("python inference.py --source source.wav --target target.wav --output ./")
+        process_text.value = "Processing..."
+        page.update()
+        os.system("python inference.py")
+        #subprocess.call(["python", "inference.py"])
+        process_text.value = ""
+        page.update()
     def play_music(e):
         play("output_ag.wav")
     def play_tts(e):
         play("output_tts.wav")
     def play_rvc(e):
-            play("vc_source_target_1.0_30_0.7.wav")
+        play("output_rvc.wav")
     def clear(e):
-        os.remove("output_tts.wav")
-        os.remove("output.wav")
-        os.remove("output.jpg")
+        pass
+        # os.remove("output_tts.wav")
+        # os.remove("output.wav")
+        # os.remove("output.jpg")
 
+    imageGen = ft.TextField(hint_text="What's needs to be done?", autofocus=True)
 
     image_tab = ft.Column(
         controls=[
@@ -77,6 +86,8 @@ def main(page: ft.Page):
             ft.Image(src="output.jpg", width=300)
         ],
     )
+
+    musicField = ft.TextField(hint_text="Type of music")
 
     audio_tab = ft.Column(
         controls=[
@@ -94,6 +105,8 @@ def main(page: ft.Page):
         ]
     )
 
+    ttsField = ft.TextField(hint_text="TTS")
+
     tts_tab = ft.Column(
         controls=[
             ft.Row(
@@ -110,19 +123,22 @@ def main(page: ft.Page):
         ]
     )
 
+    rec_button = ft.IconButton(icon=ft.icons.PLAY_ARROW, on_click=record)
+    process_text = ft.Text(value="")
+
     rvc_tab = ft.Column(
         controls=[
+            ft.Text(value="Нажми, чтобы начать запись аудио на 5 секунд"),
+            rec_button,
+            ft.Text(value="Нажми, чтобы изменить голос на голос Губки Боба"),
             ft.Row(
                 controls=[
-                    ft.IconButton(icon=ft.icons.START, on_click=record),
-                    ft.IconButton(icon=ft.icons.SEND, on_click=generate_rvc)
+                    ft.IconButton(icon=ft.icons.SEND, on_click=generate_rvc),
+                    process_text
                 ]
             ),
-            ft.Row(
-                controls=[
-                    ft.IconButton(icon=ft.icons.PLAY_ARROW, on_click=play_rvc)
-                ]
-            )
+            ft.Text(value="Нажми, чтобы услышать изменённый голос"),
+            ft.IconButton(icon=ft.icons.PLAY_ARROW, on_click=play_rvc)
         ]
     )
 
@@ -144,7 +160,8 @@ def main(page: ft.Page):
             ),
             ft.Tab(
                 text="RVC",
-                content=rvc_tab
+                content=rvc_tab,
+
             )
         ]
     )

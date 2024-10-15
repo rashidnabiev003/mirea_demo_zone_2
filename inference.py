@@ -1,6 +1,8 @@
 import shutil
 import warnings
 import argparse
+from idlelib.iomenu import encoding
+
 import torch
 import os
 import os.path as osp
@@ -260,14 +262,14 @@ def main(args):
     source_name = source.split("/")[-1].split(".")[0]
     target_name = target_name.split("/")[-1].split(".")[0]
     os.makedirs(args.output, exist_ok=True)
-    torchaudio.save(os.path.join(args.output, f"vc_{source_name}_{target_name}_{length_adjust}_{diffusion_steps}_{inference_cfg_rate}.wav"), vc_wave.cpu(), sr)
+    torchaudio.save(os.path.join(args.output, f"output_rvc.wav"), vc_wave.cpu(), sr, encoding="PCM_S")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--source", type=str, default="./examples/source/source_s1.wav")
-    parser.add_argument("--target", type=str, default="./examples/reference/s1p1.wav")
-    parser.add_argument("--output", type=str, default="./reconstructed")
+    parser.add_argument("--source", type=str, default="./source.wav")
+    parser.add_argument("--target", type=str, default="./target.wav")
+    parser.add_argument("--output", type=str, default="./")
     parser.add_argument("--diffusion-steps", type=int, default=30)
     parser.add_argument("--length-adjust", type=float, default=1.0)
     parser.add_argument("--inference-cfg-rate", type=float, default=0.7)
