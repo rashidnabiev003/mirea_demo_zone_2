@@ -1,7 +1,7 @@
 import flet as ft
 from TTS.api import TTS
 import requests
-import io, subprocess, os
+import io, subprocess, os, base64
 from PIL import Image
 from playsound import playsound as play
 from audiocraft.models import MusicGen
@@ -10,27 +10,40 @@ import sounddevice as sd
 from scipy.io.wavfile import write
 import json as js
 
+API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0"
+headers = {"Authorization": "Bearer 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"}
+def query(payload):
+    response = requests.post(API_URL, headers=headers, json=payload)
+    return response.content
+
 def main(page: ft.Page):
     progress = ft.ProgressRing()
 
     def generate_image(e):
+        # try:
+        #     os.remove("output.jpg")
+        # except:
+        #     pass
+        # imageTab.controls.remove(imageSrc)
         imageRow.controls.remove(imageButton)
         imageRow.controls.append(progress)
         page.update()
-        API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0"
-        headers = {"Authorization": "Bearer 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"}
-        def query(payload):
-            response = requests.post(API_URL, headers=headers, json=payload)
-            return response.content
 
         image_bytes = query({"inputs": imageField.value})
         image = Image.open(io.BytesIO(image_bytes))
-        image_path = "output1.jpg" if imageSrc.src=="output.jpg" else "output.jpg"
-        image.save(image_path)
-        imageSrc.src = image_path
+
+        buff = io.BytesIO()
+        image.save(buff, format="JPEG")
+
+        newstring = base64.b64encode(buff.getvalue()).decode("utf-8")
+
+        imageSrc.src_base64 = newstring
         imageRow.controls.remove(progress)
         imageRow.controls.append(imageButton)
         page.update()
+
+        #os.remove("output.jpg")
+
 
     def generate_music(e):
         audioRow.controls.remove(musicButton)
@@ -67,10 +80,10 @@ def main(page: ft.Page):
         rvcRec.icon = ft.icons.PAUSE_CIRCLE
         rvcRec.disabled = True
         page.update()
-        fs = 44100  # Sample rate
+        fs = 22050  # Sample rate
         seconds = 5  # Duration of recording
 
-        recording = sd.rec(int(seconds * fs), samplerate=fs, channels=2)
+        recording = sd.rec(int(seconds * fs//2), samplerate=fs*2, channels=1)
         sd.wait()  # Wait until recording is finished
         write('source.wav', fs, recording)  # Save as WAV file
         rvcRec.icon = ft.icons.PLAY_ARROW_ROUNDED
@@ -165,7 +178,7 @@ def main(page: ft.Page):
         controls=[
             ft.Text(value="Нажми, чтобы начать запись аудио на 5 секунд"),
             rvcRec,
-            ft.Text(value="Нажми, чтобы изменить голос на голос Губки Боба"),
+            ft.Text(value="Нажми, чтобы изменить голос"),
             rvcRow,
             ft.Text(value="Нажми, чтобы услышать изменённый голос"),
             ft.IconButton(icon=ft.icons.PLAY_ARROW, on_click=lambda e: play("output_rvc.wav"))
