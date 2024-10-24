@@ -10,6 +10,34 @@ import sounddevice as sd
 from scipy.io.wavfile import write
 import json as js
 
+import gradio as gr
+
+def greet(name, intensity):
+    return "Hello, " + name + "!" * int(intensity)
+
+def record(e):
+    fs = 22050  # Sample rate
+    seconds = 5  # Duration of recording
+
+    recording = sd.rec(int(seconds * fs), samplerate=fs, channels=1)
+    sd.wait()  # Wait until recording is finished
+    write('source.wav', fs, recording)  # Save as WAV file
+
+def rvc_gen(old, new):
+    write('source.wav', old[0], old[1])
+    write('target.wav', new[0], new[1])
+    os.system("python inference.py")
+    return "./output_rvc.wav"
+
+demo = gr.Interface(
+    fn=rvc_gen,
+    inputs=["audio", "audio"],
+    outputs=["audio"],
+)
+
+demo.launch(share=True)
+
+
 API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0"
 headers = {"Authorization": "Bearer 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"}
 def query(payload):
@@ -83,7 +111,7 @@ def main(page: ft.Page):
         fs = 22050  # Sample rate
         seconds = 5  # Duration of recording
 
-        recording = sd.rec(int(seconds * fs//2), samplerate=fs*2, channels=1)
+        recording = sd.rec(int(seconds * fs), samplerate=fs, channels=1)
         sd.wait()  # Wait until recording is finished
         write('source.wav', fs, recording)  # Save as WAV file
         rvcRec.icon = ft.icons.PLAY_ARROW_ROUNDED
@@ -95,7 +123,6 @@ def main(page: ft.Page):
         page.update()
         os.system("python inference.py")
         rvcText.value = ""
-        rvcRow.controls.remove()
         page.update()
 
     def clear(e):
@@ -219,7 +246,7 @@ def main(page: ft.Page):
         ]
     )
 
-    page.add(top_row)
+    #page.add(top_row)
 
     l_column = ft.Column(
         controls=[
@@ -255,7 +282,8 @@ def main(page: ft.Page):
         ]
     )
 
-    page.add(main_row)
+    #page.add(main_row)
+    page.add(rvcTab)
 
     def get_tab(name):
         tab = ft.Text(value="None")
@@ -292,7 +320,6 @@ def main(page: ft.Page):
 
     with open('main.json') as f:
         d = js.load(f)
-        print(d)
         for i in d:
             js_print_name(i)
             for j in d[i]:
@@ -301,7 +328,7 @@ def main(page: ft.Page):
     # page.add(tabs)
     page.on_connect=clear
 
-ft.app(
-    main,
-    assets_dir=""
-)
+# ft.app(
+#     main,
+#     assets_dir=""
+# )
