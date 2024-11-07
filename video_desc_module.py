@@ -1,4 +1,5 @@
 from operator import attrgetter
+from transformers import T5ForConditionalGeneration, T5Tokenizer
 from llava.model.builder import load_pretrained_model
 from llava.mm_utils import get_model_name_from_path, process_images, tokenizer_image_token
 from llava.constants import IMAGE_TOKEN_INDEX, DEFAULT_IMAGE_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN, IGNORE_INDEX
@@ -15,6 +16,13 @@ from decord import VideoReader, cpu
 
 def get_device_map() -> str:
     return 'cuda' if torch.cuda.is_available() else 'cpu'
+
+device = get_device_map()
+model_name_translator = 'utrobinmv/t5_translate_en_ru_zh_small_1024'
+model_tr = T5ForConditionalGeneration.from_pretrained(model_name_translator)
+model_tr.to(device)
+tokenizer_tr = T5Tokenizer.from_pretrained(model_name_translator)
+
 
 warnings.filterwarnings("ignore")
 # Load the OneVision model
@@ -74,4 +82,11 @@ cont = model.generate(
     modalities=["video"],
 )
 text_outputs = tokenizer.batch_decode(cont, skip_special_tokens=True)
-print(text_outputs[0])
+#print(text_outputs[0])
+
+prefix = 'translate to ru: '
+src_text = prefix + f"{text_outputs[0]}"
+input_ids = tokenizer_tr(src_text, return_tensors="pt")
+generated_tokens = model_tr.generate(**input_ids.to(device))
+result = tokenizer_tr.batch_decode(generated_tokens, skip_special_tokens=True)
+print(*result)
